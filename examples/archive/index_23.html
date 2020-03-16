@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8
+		 Copyright 2019 by Lotus.fm LLC>
+		<title>Lotus Petal Content Discovery Demo</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="../build/three.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+		<script>
+
+		    var scene = new THREE.Scene();
+		    var camera = new THREE.PerspectiveCamera
+		    ( 40,( window.innerWidth)/(window.innerHeight), 0.1, 1000 );
+		    
+		    var renderer = new THREE.WebGLRenderer();
+		    renderer.setSize( window.innerWidth, window.innerHeight );
+		    document.body.appendChild( renderer.domElement );
+
+		    var controls = new THREE.OrbitControls( camera, renderer.domElement );
+			controls.minDistance = 0;
+			controls.maxDistance = 100;
+			controls.maxPolarAngle = Math.PI / 2;
+		    
+		    var light = new THREE.PointLight(0xffffff);
+		    light.position.set(-100,200,100);
+		    scene.add(light);
+
+		    var group;
+		    group = new THREE.Group();
+        	group.position.y = 0;
+        	scene.add( group );
+
+
+//Petal Constructor - draws outline of petal
+        	function petal (x, y, z, x0, y0, z0, x1, y1, z1, petalheight, ctrlpt, color_code) {
+
+			var curve = new THREE.QuadraticBezierCurve3(
+				new THREE.Vector3( x, y, z ),
+				new THREE.Vector3( x, ctrlpt, z),
+				new THREE.Vector3( x0, y0 + petalheight, z0),
+			);
+
+			var points = curve.getPoints( 50 );
+			var geometry = new THREE.BufferGeometry().setFromPoints( points );
+			var material = new THREE.LineBasicMaterial( { color : color_code } );
+			var curveObject = new THREE.Line( geometry, material );
+			group.add( curveObject );
+
+			var curve2 = new THREE.QuadraticBezierCurve3(
+				new THREE.Vector3( x0, y0 + petalheight, z0),
+				new THREE.Vector3( x1, ctrlpt, z1),
+				new THREE.Vector3( x1, y1, z1),
+			);
+
+			var points = curve2.getPoints( 50 );
+			var geometry = new THREE.BufferGeometry().setFromPoints( points );
+			var material = new THREE.LineBasicMaterial( { color : color_code } );
+
+			var curveObject = new THREE.Line( geometry, material );
+			group.add( curveObject );
+			}
+
+
+//Chart Position Arc - returns points for top of chart lines
+			function cParc (x, y, z, x0, y0, z0, x1, y1, z1, petalheight, ctrlpt, color_code) {
+
+			var curve = new THREE.QuadraticBezierCurve3(
+				new THREE.Vector3( x, y, z ),
+				new THREE.Vector3( x, ctrlpt, z),
+				new THREE.Vector3( x0, y0 + petalheight, z0),
+			);
+
+			var points1 = curve.getSpacedPoints ( 25);
+			var geometry = new THREE.BufferGeometry().setFromPoints( points1 );
+			var material = new THREE.LineBasicMaterial( { color : color_code } );
+			var curveObject = new THREE.Line( geometry, material );
+			group.add( curveObject );
+
+			var curve2 = new THREE.QuadraticBezierCurve3(
+				new THREE.Vector3( x0, y0 + petalheight, z0),
+				new THREE.Vector3( x1, ctrlpt, z1),
+				new THREE.Vector3( x1, y1, z1),
+			);
+
+			var points2 = curve2.getSpacedPoints ( 25 );
+			var geometry = new THREE.BufferGeometry().setFromPoints( points2 );
+			var material = new THREE.LineBasicMaterial( { color : color_code } );
+			var curveObject = new THREE.Line( geometry, material );
+			group.add( curveObject );
+
+			var points = points1.concat(points2);
+			return(points);
+			}
+
+
+//Chart Position - draws chart lines within petal arc
+        	function cP (x, y, z, x0, y0, z0, petalheight, ctrlpt, color_code) {
+
+			var cPcurve = new THREE.QuadraticBezierCurve3(
+				new THREE.Vector3( x, y, z ),
+				new THREE.Vector3( x, ctrlpt, z),
+				new THREE.Vector3( x0, y0, z0),
+			);
+
+			var points = cPcurve.getPoints( 50);
+			var geometry = new THREE.BufferGeometry().setFromPoints( points );
+			var material = new THREE.LineBasicMaterial( { color : color_code } );
+			var curveObject = new THREE.Line( geometry, material );
+			group.add( curveObject );
+			}
+
+
+//Outer Petals - draws outer ring of petals
+			var segmentCount = 16,
+			    radius = 1,
+			    depth = .1,
+			    color_code =  0x0099cc,
+			    geometry = new THREE.Geometry(),
+			    material = new THREE.LineBasicMaterial({ color: color_code });
+
+			for (var i = 0; i <= segmentCount; i++) {
+			    var theta = (i / segmentCount) * Math.PI * 2;
+			    var iota = ((i +.5 )/ segmentCount) * Math.PI * 2;
+			    var kappa = ((i +1 )/ segmentCount) * Math.PI * 2;
+			    petal (Math.cos(theta) * radius,0,Math.sin(theta) * radius,
+			    	   Math.cos(iota) * (radius - depth),0,Math.sin(iota) * (radius - depth),
+			    	   Math.cos(kappa) * radius,0,Math.sin(kappa) * radius, .5, .45, color_code
+			            );
+			}
+			group.add(new THREE.Line(geometry, material));
+
+
+//Draws Chart Lines - outer petals
+        	var segmentCount = 800,
+			    radius = 1,
+			    depth = .1,
+			    color_code =  0x0099cc,
+			    divisor = 50;
+			    geometry = new THREE.Geometry(),
+			    material = new THREE.LineBasicMaterial({ color: color_code });
+			    var links = [null, "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", , "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", , "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", , "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", , "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/",, "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", , "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", , "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/", "https://influence.lotus.fm/en/listings/701008-riot-af","https://influence.lotus.fm/en/listings/724530-home-body","https://influence.lotus.fm/en/listings/713610-joseph-ady","http://www.sleater-kinney.com/","http://www.thethermals.com/", "https://rosebloodband.bandcamp.com/",
+			    "https://www.jetechomusic.com/","http://www.smallmillion.com/", "https://soundcloud.com/thatfuckingivan",
+			    "http://www.ramborich.com", "https://missrayon.bandcamp.com/", "https://dreamwulf.bandcamp.com/", 
+			    "https://deaftelepathy.bandcamp.com", "https://velcronightmare.bandcamp.com/", 
+			    "http://www.decemberists.com/", "http://www.scottpemberton.com/", "https://soundcloud.com/yerathrall/loverload-i-dont-care-demo", "https://www.reverbnation.com/geneethorpjr", 
+			    "https://www.karmarivera.com/", "https://blackwaterholylight.bandcamp.com", "http://www.dirtyrevival.com/",
+			    "http://www.blitzentrapper.net/", "https://savila.bandcamp.com/", "http://pinkmartini.com/", "https://www.haley-heynderickx.com/", "https://thebody.bandcamp.com/", "https://alienboypdx.bandcamp.com/"
+			    ]
+
+			    //this splice prevents two link values from occupying the same center point on the chart
+			    var blanks = [];
+			    for (var i = 0; i < segmentCount; i++) {
+			    var skip = ((i*(divisor/2))+1);
+			    blanks.push(skip);
+			    }
+
+			    for (var i = 0; i < segmentCount; i++) {		   
+			    links.splice(blanks[i],0,null); 
+				}
+
+			for (var i = 0; i < segmentCount; i++) {
+				var k = 0;
+			    var theta = (i / segmentCount) * Math.PI * 2;
+			    var iota = ((i +.5 )/ segmentCount) * Math.PI * 2;
+			    var kappa = ((i +1 )/ segmentCount) * Math.PI * 2;
+			    var iota0 = ((i + (divisor/2))/ segmentCount) * Math.PI * 2;
+			    var kappa0 = ((i + divisor)/ segmentCount) * Math.PI * 2;
+			    var modulus = i % divisor;
+
+			    var base_x = Math.cos(theta) * radius;
+			    var base_y = 0;
+			    var base_z = Math.sin(theta) * radius;
+
+			    if (modulus == 0)
+
+			    {
+			    var chartPoint = cParc (Math.cos(theta) * radius,0,Math.sin(theta) * radius,
+			    Math.cos(iota0) * (radius - depth),0,Math.sin(iota0) * (radius - depth),
+			    Math.cos(kappa0) * radius,0,Math.sin(kappa0) * radius, .5, .45, 0x00769d);
+
+			    for (var j = 1; j <= divisor; j++) 
+			    {
+			    k=i + j;
+			    var theta0 = (k / segmentCount) * Math.PI * 2;
+			    var base_xk = Math.cos(theta0) * radius;
+			    var base_yk = 0;
+			    var base_zk = Math.sin(theta0) * radius;
+			    //document.write(k + " " + links[k] + ", ");
+
+
+			    //k values are constructed so that there is only one link (not two) at the top of each petal chart.
+			    //k values increment from right to left.
+
+			    if (blanks.includes(k)) {  
+			    	color_code=0xff41dc;
+			    	new_color_code=color_code;
+			    }
+
+			    else if (blanks.includes(k+1)) {  
+			    	color_code=new_color_code;
+			    }
+
+			    /*else if (k==26) {  
+			    	color_code=0xff41dc;
+			    } */
+
+			    else if (k==27) {  
+			    	color_code=0xffca85;
+			    }
+
+			    /*
+			    else if (k==77) {  
+			    	color_code=0xffca85;
+			    }
+
+			    
+			    else if (k==129) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==136) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==152) {
+			    	color_code=0xffca85;
+			    }
+
+			    else if (k==165) {
+			    	color_code=0xffca85;
+			    }
+
+			    else if (k==469) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==226) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==384) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==76) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==492) {
+			    	color_code=0xffca85;
+			    }
+
+			    else if (k==65) {
+			    	color_code=0xffca85;
+			    }*/
+
+			    else color_code=0x0099cc;
+			    
+
+			    cP (chartPoint[j].x,chartPoint[j].y,chartPoint[j].z,
+			    base_xk,0,base_zk, .5, 0, color_code);
+			    //document.write(k + ",");
+				}
+			}
+
+			    geometry.vertices.push(
+			        new THREE.Vector3(
+			            Math.cos(theta) * radius,
+			            0,
+			            Math.sin(theta) * radius
+			            ));          
+			}
+			group.add(new THREE.Line(geometry, material));
+
+
+
+//middle petals
+			/*var segmentCount = 14,
+			    radius = .85,
+			    depth = .1,
+			    color_code = 0x0289b6,
+			    geometry = new THREE.Geometry(),
+			    material = new THREE.LineBasicMaterial({ color: color_code });
+
+			for (var i = 0; i <= segmentCount; i++) {
+			    var theta = (i / segmentCount) * Math.PI * 2;
+			    var iota = ((i +.5 )/ segmentCount) * Math.PI * 2;
+			    var kappa = ((i +1 )/ segmentCount) * Math.PI * 2;
+			    petal (Math.cos(theta) * radius,0,Math.sin(theta) * radius,
+			    	   Math.cos(iota) * (radius - depth),0,Math.sin(iota) * (radius - depth),
+			    	   Math.cos(kappa) * radius,0,Math.sin(kappa) * radius, .6, .55, color_code
+			            );       
+			}
+			group.add(new THREE.Line(geometry, material));
+
+
+
+//draws chart lines - middle petals
+
+
+        	var segmentCount = 700,
+			    radius = .85,
+			    depth = .1,
+			    color_code =   0x0289b6,
+			    divisor = 50;
+			    geometry = new THREE.Geometry(),
+			    material = new THREE.LineBasicMaterial({ color: color_code });
+
+			for (var i = 0; i < segmentCount; i++) {
+				var k = 801;
+			    var theta = (i / segmentCount) * Math.PI * 2;
+			    var iota = ((i +.5 )/ segmentCount) * Math.PI * 2;
+			    var kappa = ((i +1 )/ segmentCount) * Math.PI * 2;
+			    var iota0 = ((i + (divisor/2))/ segmentCount) * Math.PI * 2;
+			    var kappa0 = ((i + divisor)/ segmentCount) * Math.PI * 2;
+			    var modulus = i % divisor;
+
+			    var base_x = Math.cos(theta) * radius;
+			    var base_y = 0;
+			    var base_z = Math.sin(theta) * radius;
+
+
+			    if (modulus == 0)
+
+			    {
+
+			    var chartPoint = cParc (Math.cos(theta) * radius,0,Math.sin(theta) * radius,
+			    Math.cos(iota0) * (radius - depth),0,Math.sin(iota0) * (radius - depth),
+			    Math.cos(kappa0) * radius,0,Math.sin(kappa0) * radius, .6, .55, 0x00769d
+			            );
+
+			    for (var j = 1; j <= divisor; j++) 
+			    {
+			    k=i + j;
+			    var theta0 = (k / segmentCount) * Math.PI * 2;
+			    var base_xk = Math.cos(theta0) * radius;
+			    var base_yk = 0;
+			    var base_zk = Math.sin(theta0) * radius;
+
+			    			    if (k==37) {
+			    	color_code=0xffca85;
+			    }
+
+			    else if (k==69) {
+			    	color_code=0xff41dc;
+			    }
+
+
+			    else if (k==125) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==129) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==136) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==152) {
+			    	color_code=0xffca85;
+			    }
+
+			    else if (k==165) {
+			    	color_code=0xffca85;
+			    }
+
+			    else color_code=0x0099cc;
+
+
+			    cP (chartPoint[j].x,chartPoint[j].y,chartPoint[j].z,
+			    base_xk,0,base_zk, .5, 0, color_code);
+			    //document.write(k + ",");
+				}
+			}
+
+			    geometry.vertices.push(
+			        new THREE.Vector3(
+			            Math.cos(theta) * radius,
+			            0,
+			            Math.sin(theta) * radius
+			            ));          
+			}
+			group.add(new THREE.Line(geometry, material));
+
+
+
+//center petals
+			var segmentCount = 12,
+			    radius = .65,
+			    depth = .1,
+			    color_code =  0x00769d,
+			    geometry = new THREE.Geometry(),
+			    material = new THREE.LineBasicMaterial({ color: color_code});
+
+			for (var i = 0; i <= segmentCount; i++) {
+			    var theta = (i / segmentCount) * Math.PI * 2;
+			    var iota = ((i +.5 )/ segmentCount) * Math.PI * 2;
+			    var kappa = ((i +1 )/ segmentCount) * Math.PI * 2;
+			    petal (Math.cos(theta) * radius,0,Math.sin(theta) * radius,
+			    	   Math.cos(iota) * (radius - depth),0,Math.sin(iota) * (radius - depth),
+			    	   Math.cos(kappa) * radius,0,Math.sin(kappa) * radius, .7, .65, color_code
+			            );          
+			}
+			group.add(new THREE.Line(geometry, material));
+
+
+
+//draws chart lines - center petals
+
+
+        	var segmentCount = 600,
+			    radius = .65,
+			    depth = .1,
+			    color_code =   0x0289b6,
+			    divisor = 50;
+			    geometry = new THREE.Geometry(),
+			    material = new THREE.LineBasicMaterial({ color: color_code });
+
+			for (var i = 0; i < segmentCount; i++) {
+				var k = 801;
+			    var theta = (i / segmentCount) * Math.PI * 2;
+			    var iota = ((i +.5 )/ segmentCount) * Math.PI * 2;
+			    var kappa = ((i +1 )/ segmentCount) * Math.PI * 2;
+			    var iota0 = ((i + (divisor/2))/ segmentCount) * Math.PI * 2;
+			    var kappa0 = ((i + divisor)/ segmentCount) * Math.PI * 2;
+			    var modulus = i % divisor;
+
+			    var base_x = Math.cos(theta) * radius;
+			    var base_y = 0;
+			    var base_z = Math.sin(theta) * radius;
+
+
+			    if (modulus == 0)
+
+			    {
+
+			    var chartPoint = cParc (Math.cos(theta) * radius,0,Math.sin(theta) * radius,
+			    Math.cos(iota0) * (radius - depth),0,Math.sin(iota0) * (radius - depth),
+			    Math.cos(kappa0) * radius,0,Math.sin(kappa0) * radius, .7, .65, 0x00769d
+			            );
+
+			    for (var j = 1; j <= divisor; j++) 
+			    {
+			    k=i + j;
+			    var theta0 = (k / segmentCount) * Math.PI * 2;
+			    var base_xk = Math.cos(theta0) * radius;
+			    var base_yk = 0;
+			    var base_zk = Math.sin(theta0) * radius;
+
+			    			    if (k==323) {
+			    	color_code=0xff41dc;
+			    }
+
+
+			    else if (k==329) {
+			    	color_code=0xff41dc;
+			    }
+
+			    else if (k==325) {
+			    	color_code=0xffca85;
+			    }
+
+			    else if (k==326) {
+			    	color_code=0xffca85;
+			    }
+
+
+
+			    else color_code=0x0099cc;
+
+
+			    cP (chartPoint[j].x,chartPoint[j].y,chartPoint[j].z,
+			    base_xk,0,base_zk, .5, 0, color_code);
+			    //document.write(k + ",");
+				}
+			}
+
+			    geometry.vertices.push(
+			        new THREE.Vector3(
+			            Math.cos(theta) * radius,
+			            0,
+			            Math.sin(theta) * radius
+			            ));          
+			}
+			group.add(new THREE.Line(geometry, material));
+			*/
+
+
+//test code
+			
+			// Notes::: create a test array here
+			// Notes::: call it from the MouseDown function
+			// Notes::: we are testing whether mouseposition performs well to open links with a large number of points
+			// Notes::: and memory demands at each level
+
+
+
+//animate and render
+
+			camera.position.z = 5;
+
+
+			function animate() {
+				requestAnimationFrame( animate );
+				renderer.render( scene, camera );
+				group.rotation.x += 0.00;
+				group.rotation.y += 0.00;
+			}
+			animate();
+
+			document.addEventListener('mousedown', onDocumentMouseDown, false);
+			//document.addEventListener('mouseover', showMousePosition, false);
+
+			/*var veryLargeArray =[];
+			for (var i = 0; i < 20; i++) {
+			    veryLargeArray.push([i,0,0]);
+			    document.write(veryLargeArray[i] + " -- ");
+			    }
+			 
+
+        	function showMousePosition(event)
+
+        	{
+			var mouseX = event.clientX;
+			var mouseY = event.clientY;
+			document.write (mouseX, mouseY);
+			} */
+
+
+        	function onDocumentMouseDown(event)
+
+        	{
+			var mouseposition = event.clientX;
+			var mousepositionY = event.clientY;
+			document.write(mouseposition + ", " + mousepositionY);
+			/* if (veryLargeArray.includes(mouseposition,0,0))
+			{
+				window.open("https://www.lotus.fm", "_self");
+			} */
+        }
+
+		</script>
+	</body>
+</html>

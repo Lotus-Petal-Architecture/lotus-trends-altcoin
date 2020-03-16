@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8
+		 Copyright 2019 by Lotus.fm LLC>
+		<title>L-DOH</title>
+		<style>
+			body { margin: 0; font-family: sans-serif;}
+			canvas { width: 100%; height: 100% }
+			#info {
+	position: absolute;
+	color: #FFF;
+	top: 10px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	font-weight: bold;
+	display:block;
+}
+		</style>
+	</head>
+	<body>
+		<div id="info">Change over 1 Hour, Volume $1M or Higher</div>
+		<script> 
+		var coin_change_time = "1h";
+		var volume_adj = 1000000;
+		</script>
+		<script src="../build/three.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+		<script src="js/lotus_renderer.js"></script>
+	</body>
+</html>

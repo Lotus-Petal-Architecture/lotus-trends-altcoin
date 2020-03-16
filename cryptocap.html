@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Get data as JSON from a PHP file on the server.</h2>
+
+<p id="demo"></p>
+
+<script>
+var xmlhttp = new XMLHttpRequest();
+
+xmlhttp.onreadystatechange = function() {
+  if (this.readyState == 4 && this.status == 200) {
+    console.log(this.responseText);
+    myObj = JSON.parse(this.responseText);
+    //myObj = this.responseText;
+
+if(myObj.data.length > 0) {
+    for (var i = 0; i < myObj.data.length; i++) {
+        var coin = myObj.data[i];
+        //console.log(entry);
+	var coin_name = coin.name;
+	var coin_priceusd = coin.quote.USD.price;
+	console.log(coin_name);
+	document.write(i+' - '+coin_name+' : $'+coin_priceusd+'<br />');	
+    }
+}
+
+  }
+};
+xmlhttp.open("GET", "cryptocap.php", true);
+xmlhttp.send();
+
+</script>
+
+</body>
+</html>
+
